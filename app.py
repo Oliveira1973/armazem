@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, session
 import sqlite3
+from datetime import timedelta
 
 app = Flask(__name__)
 app.secret_key = "efacec2026"
+app.permanent_session_lifetime = timedelta(minutes=5)
 
 
 def init_db():
@@ -24,14 +26,21 @@ def init_db():
 @app.route('/')
 def index():
     search = request.args.get('search')
-    conn = sqlite3.connect('armazem.db')
-    c = conn.cursor()
+    materiais = []
 
     if search:
-        c.execute("SELECT * FROM materiais WHERE codigo LIKE ? OR descricao LIKE ?",
-                  ('%' + search + '%', '%' + search + '%'))
-    else:
-        c.execute("SELECT * FROM materiais")
+        conn = sqlite3.connect('armazem.db')
+        c = conn.cursor()
+
+        c.execute(
+            "SELECT * FROM materiais WHERE codigo LIKE ? OR descricao LIKE ?",
+            ('%' + search + '%', '%' + search + '%')
+        )
+
+        materiais = c.fetchall()
+        conn.close()
+
+    return render_template('index.html', materiais=materiais)
 
     materiais = c.fetchall()
     conn.close()
